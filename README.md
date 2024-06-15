@@ -219,8 +219,151 @@ Using AWS Management Console:
 	5.	In the Function code section, replace the default code with the provided Python code.
 	6.	Click Deploy.
 
+Upload the ZIP File to AWS Lambda
+Using AWS Management Console:
+    1. Open the Lambda console at https://console.aws.amazon.com/lambda/.
+    2. Select your function WeeklyAMIBackup.
+    3. In the Function code section, choose Upload from > .zip file.
+    4. Click Upload, select the function.zip file you created, and click Save.
+
+Using AWS CLI:
+```bash
+aws lambda update-function-code \
+    --function-name WeeklyAMIBackup \
+    --zip-file fileb://function.zip
+```
+
+Using Terraform:
+```bash
+resource "aws_iam_role" "lambda_role" {
+  name = "LambdaAMIBackupRole"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
 
 
+resource "aws_iam_role_policy_attachment" "lambda_policy" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+}
+
+
+resource "aws_lambda_function" "weekly_ami_backup" {
+  filename         = "function.zip"
+  function_name    = "WeeklyAMIBackup"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
+  source_code_hash = filebase64sha256("function.zip")
+  runtime          = "python3.8"
+}
+```
+3. Schedule with CloudWatch Events
+Using AWS Management Console:
+	1.	Open the CloudWatch console at https://console.aws.amazon.com/cloudwatch/.
+	2.	In the navigation pane, choose Rules and then Create rules.
+	3.	For Event Source, choose Event Source and then Schedule.
+	4.	For Fixed rate of expression, choose Cron expression and enter 0 5 ? * 1 * (every Sunday at 5 AM EST).
+	5.	Click Add target, choose Lambda function, and select WeeklyAMIBackup.
+	6.	Click Create rule.
+
+
+Using AWS CLI:
+```bash
+aws events put-rule \
+    --name "WeeklyAMIBackupRule" \
+    --schedule-expression "cron(0 5 ? * 1 *)"
+
+
+aws events put-targets \
+    --rule "WeeklyAMIBackupRule" \
+    --targets "Id"="1","Arn"="arn:aws:lambda:us-east-1:YOUR_ACCOUNT_ID:function:WeeklyAMIBackup"
+```
+4. Create SNS Topic and Subscribe
+Using AWS Management Console:
+	1.	Open the Amazon SNS console at https://console.aws.amazon.com/sns/.
+	2.	Click Create topic.
+	•	Type: Standard
+	•	Name: AMIBackupNotifications
+	3.	Click Create topic.
+	4.	Select the topic, click Create subscription.
+	•	Protocol: Email
+	•	Endpoint: Enter your email address
+	5.	Click Create subscription and confirm the subscription in your email.
+
+
+Using AWS CLI:
+```bash
+aws sns create-topic --name AMIBackupNotifications
+aws sns subscribe --topic-arn arn:aws:sns:us-east-1:YOUR_ACCOUNT_ID:AMIBackupNotifications --protocol email --notification-endpoint you@example.com
+```
+
+## Validation
+
+1. Run the Lambda Function
+Manually Invoke Lambda Function:
+	1.	Open the Lambda console.
+	2.	Select WeeklyAMIBackup and click Test
+	3.	Configure test event and click Create.
+	4.	Click Test again to invoke the function.
+Verify AMIs:
+	1.	Open the EC2 console..
+	2.	In the navigation pane, choose AMIs.
+	3.	Check that AMIs are created with the expected names and tags.
+Check Old AMIs Deletion:
+	1.	Verify that AMIs older than 30 days are deleted, except for those in use.
+SNS Notifications:
+	1.	Check your email for notifications from SNS about the Lambda function execution status.
+
+
+2. Monitor Scheduled Runs
+Using CloudWatch Logs:
+	1.	Open the CloudWatch console.
+	2.	Navigate to Logs and select the log group for your Lambda function.
+	3.	Select the log group for the Lambda function and monitor the logs for any issues.
+    4.  Verify the logs to ensure the function executed correctly.
+
+
+Check CloudWatch Events:
+	1.	Ensure the scheduled rule is triggering the Lambda function weekly.
+	2.	Monitor SNS notifications for any issues.
+
+
+## Increase Lambda Timeout Using AWS Management Console
+
+In case you have this error message Task timed out after 3.00 seconds indicates that your AWS Lambda function execution time exceeded the default timeout limit of 3 seconds. To fix this, you need to increase the timeout setting for your Lambda function.
+Here's how you can increase the timeout setting:
+
+01. Open the AWS Lambda Console:
+- Go to the AWS Management Console, and navigate to the Lambda service.
+02. Select Your Lambda Function:
+- Choose the Lambda function that you created for the AMI backup.
+03. Modify Timeout Setting:
+- In the Configuration tab, choose the "General configuration" section.
+- Click the "Edit" button.
+- Increase the "Timeout" value to an appropriate duration. Since AMI creation can take a bit longer, you might want to set it to 5 minutes (300 seconds) or more.
+04. Save Changes:
+- Click the "Save" button to apply the new settings.
+
+
+Re-Run Your Lambda Function
+
+After increasing the timeout setting, manually invoke the Lambda function again to verify that it completes successfully without timing out.
+By increasing the timeout setting and using this refined code, your Lambda function should be able to handle the AMI creation and deletion process more effectively.
+
+
+By following these steps and examples, you should be able to deploy, validate, and monitor your Lambda function for creating weekly EC2 AMI backups and managing old AMIs effectively.
 
 
 
