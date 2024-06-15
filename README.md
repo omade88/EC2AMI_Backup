@@ -123,5 +123,104 @@ def lambda_handler(event, context):
 ```bash
 zip -r function.zip lambda_function.py
 ```
+Ensure that the function.zip file is not empty and contains the lambda_function.py
+
+## NOTE
+If the zip utility is not installed on your system. You need to install it to create ZIP files. Here are the steps to install the zip utility on different operating systems:
+For Linux (Debian/Ubuntu):
+```bash
+sudo apt-get update
+sudo apt-get install zip -y
+```
+For Linux (CentOS/RHEL):
+```bash
+sudo yum install zip -y
+```
+For macOS:
+If you are using Homebrew (recommended), you can install zip with:
+```bash
+brew install zip
+```
+
+For Windows:
+If you are using Git Bash or a similar environment that supports Unix commands, you might need to install the zip utility. Otherwise, you can use built-in Windows tools or third-party software like 7-Zip.
+Once the zip utility is installed, you can create the ZIP file as follows:
+## Creating the ZIP file
+01. Create a Directory:
+- Create a new directory to store your Lambda function code.
+- Place your lambda_function.py file in this directory.
+02 Zip the Directory:
+- Open a terminal or command prompt and navigate to the directory containing your lambda_function.py.
+- Run the following command to create a ZIP file:
+ Create a directory (if not already created):
+```bash
+mkdir my_lambda_function
+```
+ Move the lambda_function.py file into the directory
+```bash
+mv lambda_function.py my_lambda_function/
+```
+Navigate to the directory
+```bash
+cd my_lambda_function
+```
+Create the ZIP file
+```bash
+zip -r function.zip lambda_function.py
+```
+After running these commands, you should have a function.zip file that you can upload to AWS Lambda.
+
+You can install the zip utility using PowerShell on Windows by leveraging a package manager such as choco (Chocolatey) or winget (Windows Package Manager). Here are the steps to install zip using these methods:
+
+Method 1: Using Chocolatey
+Step 1: Install Chocolatey
+If you don't have Chocolatey installed, you can install it using the following command in an elevated PowerShell window (Run as Administrator):
+```bash
+Set-ExecutionPolicy Bypass -Scope Process -Force; `
+[System.Net.ServicePointManager]::SecurityProtocol = `
+[System.Net.ServicePointManager]::SecurityProtocol -bor 3072; `
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
+Step 2: Install zip Utility:
+```bash
+choco install zip -y
+```
+Step 3: Verify Installation:
+```bash
+zip --version
+```
+By following these steps, you should be able to install the zip utility on Windows using PowerShell, and then use it in Git Bash or any other command line environment.
+
+
+## Deploying the Lambda Function
+1. Create IAM Role for Lambda
+Using AWS Management Console:
+	1.	Open the IAM console at https://console.aws.amazon.com/iam/.
+	2.	In the navigation pane, choose Roles and then Create roles.
+	3.	Choose AWS service and then Lambda. Click Next: Permissions.
+	4.	Attach the necessary policies:
+	•	AmazonEC2FullAccess
+	•	AmazonSNSFullAccess
+	•	CloudWatchLogsFullAccess
+	•	AmazonEC2ReadOnlyAccess (for ec2:Describe* actions)
+	5.	Click Next: Tags and then Next: Review.
+	6.	Enter a Role name (e.g., LambdaAMIBackupRole) and click Create role.
+
+
+2. Create Lambda Function
+Using AWS Management Console:
+	1.	Open the Lambda console at https://console.aws.amazon.com/lambda/.
+	2.	Click Create function.
+	3.	Choose an Author from scratch.
+	•	Function name: WeeklyAMIBackup
+	•	Runtime: Python 3.8
+	•	Role: Choose an existing role (LambdaAMIBackupRole)
+	4.	Click Create function.
+	5.	In the Function code section, replace the default code with the provided Python code.
+	6.	Click Deploy.
+
+
+
+
 
 
